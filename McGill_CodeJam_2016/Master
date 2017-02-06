@@ -1,0 +1,625 @@
+#include <cmath>
+#include <cstdio>
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include <numeric>
+#include <string>
+#include <fstream>
+
+using namespace std;
+
+double LinearRegression(vector<double>& x, vector<double>& y) {
+	if (x.size() != y.size())
+	{
+		throw exception("Size mismatch");
+	}
+
+	int n = x.size();
+
+	double avgX = accumulate(x.begin(), x.end(), 0.0) / n;
+	double avgY = accumulate(y.begin(), y.end(), 0.0) / n;
+
+	double numerator = 0.0;
+	double denominator = 0.0;
+
+	for (int i = 0; i<n; i++)
+	{
+		numerator += (x[i] - avgX) * (y[i] - avgY);
+		denominator += (x[i] - avgX) * (x[i] - avgX);
+	}
+
+	if (denominator == 0)
+	{
+		throw exception("Don't divide by zero bruh");
+	}
+
+	return numerator / denominator;
+}
+
+double Average(vector<double>& vector)
+{
+	double sum = 0.0;
+	int size = vector.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		sum += vector[i];
+	}
+
+	return (sum / size);
+}
+
+/*double AverageSqrd(vector<double>& vector)
+{
+	double sum = 0.0;
+	int size = vector.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		sum += vector[i];
+	}
+
+	return (pow(sum, 2) / size);
+}*/
+
+double Intersect(vector<double>& x, vector<double>& y)
+{
+	double intersect, avgX, avgY = 0.0, slope;
+
+	avgX = Average(x);
+	avgY = Average(y);
+
+	slope = LinearRegression(x, y);
+
+	intersect = avgY - avgX * slope;
+
+	return intersect;
+}
+
+/*double SumSquaredValues(vector<double>& x1, vector<double>& x2)
+{
+	double ss = 0.0, temp = 0.0;
+
+	int size = x1.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		ss += x1[i] * x2[i] - size * Average(x1) * Average(x2);
+	}
+	
+	//ss = temp / (size - 1.0);
+
+	return ss;
+}*/
+
+double SumSqr(vector<double>& x1, vector<double>& x2)
+{
+	double ss = 0.0;
+
+	int size = x1.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		ss += x1[i] * x2[i];
+	}
+
+	return ss;
+}
+
+double Sum(vector<double>& x)
+{
+	double sum = 0.0;
+
+	int size = x.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		sum += x[i];
+	}
+
+	return sum;
+}
+
+double CorrelationCoefficient(vector<double>& x, vector<double>& y)
+{
+	double r = 0.0;
+
+	int size = x.size();
+	
+	r += (size * SumSqr(x, y) - Sum(x) * Sum(y)) / pow((size * SumSqr(x, x) - pow(Sum(x), 2)) * (size * SumSqr(y, y) - pow(Sum(y), 2)), 0.5);
+
+	return pow(r, 2);
+}
+
+/*double StandardDeviation(vector<double>& x, vector<double>& y)
+{
+	if (x.size() != y.size())
+	{
+		throw exception("Size mismatch");
+	}
+	
+	double standardDeviation, variance = 0.0;
+
+	int size = x.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		variance += 1.0 / (size - 1.0) * pow(y[i] - (LinearRegression(x, y) * x[i] + Intersect(x, y)), 2);
+	}
+
+	standardDeviation = sqrt(variance);
+
+	return standardDeviation;
+}*/
+
+void BinarizeVector(vector<string>& v1, vector<string>& v2)
+{
+	int size = v1.size();
+	v2.resize(size);
+
+	double negResult = 0.0, posResult = 1.0;
+
+	for (int i = 0; i < size; i++) 
+	{
+		if (v1[i].compare("COMPLETE_REMISSION") == 0)
+		{
+			v2[i] = "0";
+		}
+		else if (v1[i].compare("RESISTANT") == 0)
+		{
+			v2[i] = "1";
+		}
+	}
+
+	return;
+}
+
+void DoubleizeVectorPairs(vector<string>& x1, vector<double>& x2, vector<string>& y1, vector<double>& y2)
+{
+	int j = 0, size = x1.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		x2.resize(j + 1);
+		y2.resize(j + 1);
+		
+		if (x1[i].compare("NA") == 0 || y1[i].compare("NA") == 0)
+		{
+			j--;
+		}
+		else
+		{
+			x2[j] = atof(x1[i].c_str());
+			y2[j] = atof(y1[i].c_str());
+		}
+		j++;
+	}
+
+	return;
+}
+
+void DoubleizeAVector(vector<string>& x1, vector<string>& x2, vector<string>& y1, vector<double>& y2)
+{
+	int j = 0, size = x1.size();
+
+	for (int i = 0; i < size; i++)
+	{
+		x2.resize(j + 1);
+		y2.resize(j + 1);
+
+		if (x1[i].compare("NA") == 0 || y1[i].compare("NA") == 0)
+		{
+			j--;
+		}
+		else
+		{
+			x2[j] = x1[i];
+			y2[j] = atof(y1[i].c_str());
+		}
+		j++;
+	}
+
+	return;
+}
+
+double Ratio(vector<string>& testType, vector<double>& timeVector, string patientResult) 
+{
+	//average of option 1
+	string option1 = "";
+	string option2 = "";
+	string option3 = "";
+	int numOption1 = 0, numOption2 = 0, numOption3 = 0; //counters
+	double sumTimeOpt1 = 0, sumTimeOpt2 = 0, sumTimeOpt3 = 0, sumTimeTotal = 0;
+	double averageTimeOpt1, averageTimeOpt2, averageTimeOpt3, averageTimeTotal;
+	double ratio1, ratio2, ratio3;
+	//Storing string into option1
+	for (int i = 0; i < testType.size(); i++) 
+	{
+		if (testType[i].compare("ND") == 0 || testType[i].compare("NotDone") == 0) 
+		{
+			option1 += "";
+		}
+		else 
+		{
+			option1 = testType[i];
+			break;
+		}
+	}
+	//Storing string into option2
+	
+	for (int i = 1; i < testType.size(); i++) 
+	{
+		if (testType[i].compare("ND") == 0 || testType[i].compare("NotDone") == 0) 
+		{
+			option2 += "";
+		}
+		else if (option1.compare(option2) == 0)
+		{
+			continue;
+		}
+		else if (!(option1.compare(option2) == 0))
+		{
+			option2 = testType[i];
+			break;
+		}
+	}
+
+	//Storing string into option3
+	for (int i = 1; i < testType.size(); i++) 
+	{
+		if (testType[i].compare("ND") == 0 || testType[i].compare("NotDone") == 0 || testType[i].compare(option1) == 0 || testType[i].compare(option2) == 0) 
+		{
+			option3 += "";
+		}
+		else 
+		{
+			option3 = testType[i];
+		}
+	}
+
+	//cout << option1 << ' ' << option2 << ' ' << option3 << ' ' << patientResult << endl;
+	//counting number of patients in each option
+	for (int i = 0; i < testType.size(); i++) 
+	{
+		if (testType[i].compare(option1) == 0) 
+		{
+			sumTimeOpt1 += timeVector[i];
+			numOption1++;
+		}
+		else if (testType[i].compare(option2) == 0) 
+		{
+			sumTimeOpt2 += timeVector[i];
+			numOption2++;
+		}
+		else if (testType[i].compare(option3) == 0) 
+		{
+			sumTimeOpt3 += timeVector[i];
+			numOption3++;
+		}
+	}
+	//calculating average time
+	sumTimeTotal = sumTimeOpt1 + sumTimeOpt2 + sumTimeOpt3;
+	averageTimeOpt1 = sumTimeOpt1 / numOption1;
+	averageTimeOpt2 = sumTimeOpt2 / numOption2;
+	averageTimeOpt3 = sumTimeOpt3 / numOption3;
+	averageTimeTotal = sumTimeTotal / (numOption1 + numOption2 + numOption3);
+
+	//ratios of increase
+	ratio1 = averageTimeOpt1 / averageTimeTotal;
+	ratio2 = averageTimeOpt2 / averageTimeTotal;
+	ratio3 = averageTimeOpt3 / averageTimeTotal;
+
+	//cout << averageTimeOpt1 << ' ' << averageTimeTotal << ' ' << sumTimeTotal << ' ' << endl;
+	//returning relevant ratio for the input patient
+	if (patientResult.compare(option1) == 0)
+	{
+		return ratio1; 
+	}
+
+	else if (patientResult.compare(option2) == 0)
+	{
+		return ratio2;
+	}
+
+	else if (patientResult.compare(option3) == 0)
+	{
+		return ratio3;
+	}
+
+	else
+	{
+		return 1;
+	}
+}
+
+double CalculateFromLineReg(vector<double>& x, vector<double>& y, double patientX)
+{
+	double answer;
+
+	answer = LinearRegression(x, y) * patientX + Intersect(x, y);
+
+	/*for (int i = 0; i < x.size(); i++)
+	{
+		cout << x[i] << ' ' << y[i] << endl;
+	}
+	cout << "O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O0O" << endl;*/
+	
+	return answer;
+}
+
+vector<string> GetColumn(vector<vector<string> >& table, int index)
+{
+	vector<string> column;
+	column.resize(table.size());
+
+	for (int i = 0; i < table.size(); i++)
+	{
+		column[i] = table[i][index];
+	}
+
+	return column;
+}
+
+vector<vector<string> > VectorInverter(vector<vector<string> >& v1)
+{
+	vector<vector<string> > v2;
+	v2.resize(v1[0].size());
+
+	for (int i = 0; i < v1[0].size(); i++) //Resizing the vector
+	{
+		v2[i].resize(v1.size());
+	}
+
+	for (int i = 0; i < v1[0].size(); i++)
+	{
+		for (int j = 0; j < v1.size(); j++)
+		{
+			v2[i][j] = v1[j][i];
+		}
+	}
+
+	return v2;
+}
+
+double CalculateResult(vector<vector<string> >& sampleData, vector<string>& patientData, vector<double>& stringyColumns, int parameter)
+{
+	double resultSum = 0.0, rSum = 0.0, multiplier = 1.0;
+	int sizeX = sampleData.size(), sizeY = sampleData[0].size();
+	
+	for (int i = 1; i < sizeX; i++)
+	{
+		if (stringyColumns[i] == 1)
+		{
+			vector<string> xData;
+			vector<double> yData;
+			if (parameter == 3)
+			{
+				vector<string> binarizedResult;
+				BinarizeVector(GetColumn(sampleData, sizeY - parameter), binarizedResult);
+				DoubleizeAVector(GetColumn(sampleData, i), xData, binarizedResult, yData);
+				//DoubleizeAVector(GetColumn(sampleData, i), xData, GetColumn(sampleData, sizeY - parameter), yData);
+			}
+			else DoubleizeAVector(GetColumn(sampleData, i), xData, GetColumn(sampleData, sizeY - parameter), yData);
+
+			/*for (i = 0; i < xData.size(); i++)
+			{
+				cout << xData[i] << ' ';
+			}*/
+			multiplier *= Ratio(xData, yData, patientData[i]);
+		}
+		
+		else if (stringyColumns[i] == 0)
+		{
+			vector<double> xData;
+			vector<double> yData;
+			if (parameter == 3)
+			{
+				vector<string> binarizedResult;
+				BinarizeVector(GetColumn(sampleData, sizeY - parameter), binarizedResult);
+				DoubleizeVectorPairs(GetColumn(sampleData, i), xData, binarizedResult, yData);
+				//DoubleizeAVector(GetColumn(sampleData, i), xData, GetColumn(sampleData, sizeY - parameter), yData);
+			}
+			else DoubleizeVectorPairs(GetColumn(sampleData, i), xData, GetColumn(sampleData, sizeY - parameter), yData);
+
+			rSum += abs(CorrelationCoefficient(xData, yData));
+			resultSum += abs(CorrelationCoefficient(xData, yData)) * CalculateFromLineReg(xData, yData, atof(patientData[i].c_str()));
+			//cout << endl << CalculateFromLineReg(xData, yData, atof(patientData[i].c_str())) << endl;
+		}
+	}
+	resultSum /= rSum;
+	resultSum *= multiplier;
+
+	return resultSum;
+}
+
+int main() {
+	/*vector<double> stringyColumns{ 1, 0, 1, 0, 0, 0, 1 };
+
+	vector<double> x{ 56, 56, 65, 65, 50, 25, 87, 44, 35 };
+	vector<double> y{ 87, 91, 85, 91, 75, 28, 122, 66, 58 };
+	vector<string> eg{ "NEG", "POS", "NEG", "NEG", "POS", "fro" };
+	vector<double> exo(7);
+
+	vector<string> x1{ "NA", "546", "23", "NA", "87", "NA" };
+	vector<string> y1{ "87", "91", "85", "91", "75", "28" };
+
+	vector<double> x2;
+	vector<double> y2;
+
+	float slope = LinearRegression(x, y), intersect = Intersect(x, y), standardDeviation = CorrelationCoefficient(x, y);
+
+	cout << slope << " " << intersect << " " << standardDeviation << endl << endl;
+
+	BinarizeVector(eg, exo);
+
+	for (int i = 0; i < exo.size(); i++)
+	{
+		cout << exo[i] << " ";
+	}
+
+	string lol = "12345";
+	double gee = 45.4, neg;
+
+	neg = stod(lol);
+
+	cout << neg / gee << endl;
+
+	DoubleizeVectors(x1, x2, y1, y2);
+
+	cout << x2[2];
+	
+
+	vector<string> strungs = { "amaze", "lol", "lol", "amaze", "lol" };
+	vector<double> nice = { 3.5, 2, 7, 2, 6 };
+	string wow = "amaze";
+
+	//cout << CalculateResult;
+	*/
+
+	string line1, line2;
+	fstream sampleData, patientData;
+	sampleData.open("DATABASE.txt");
+	patientData.open("Patient.txt");
+
+	vector<double> stringyCols = { 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+	vector<vector<string> > database;
+	database.resize(166);
+
+	vector<vector<string> > patient;
+	patient.resize(5);
+
+	int sizeX1 = database.size();
+	int sizeX2 = patient.size();
+
+	for (int i = 0; i < sizeX1; i++)
+	{
+		database[i].resize(269);
+	}
+
+	for (int i = 0; i < sizeX2; i++)
+	{
+		patient[i].resize(269);
+	}
+
+	int sizeY1 = database[0].size();
+	int sizeY2 = patient[0].size();
+
+	if (sampleData.is_open() && patientData.is_open())
+	{
+		int j = 0, k = 0;
+		while (getline(sampleData, line1))
+		{
+			for (int i = 0; i < sizeY1; i++)
+			{
+				sampleData >> database[j][i];
+				//cout << database[j][i];
+			}
+			j++;
+		}
+
+		while (getline(patientData, line2))
+		{
+			for (int l = 0; l < sizeY2; l++)
+			{
+				patientData >> patient[k][l];
+				//cout << patient[k][l] << " ";
+			}
+			//cout << endl;
+			k++;
+		}
+	}
+
+	/*vector<vector<string> > gee;
+	gee.resize(5);
+	for (int i = 0; i < 5; i++)
+	{
+		gee[i].resize(7);
+	}
+
+	int k = 0;
+	for (int i = 0; i < gee.size(); i++)
+	{
+		for (int j = 0; j < gee[0].size(); j++)
+		{
+			gee[i][j] = to_string(k);
+			cout << gee[i][j] << ' ';
+			k++;
+		}
+		cout << endl;
+	}
+
+	for (int i = 0; i < gee[0].size(); i++)
+	{
+		for (int j = 0; j < gee.size(); j++)
+		{
+			cout << VectorInverter(gee)[i][j] << 'v';
+		}
+		cout << endl;
+	}
+	int sizeY1 = database.size();
+	int sizeY2 = patient.size();
+
+	for (int i = 0; i < sizeY1; i++)
+	{
+		database[i].resize(166);
+	}
+
+	for (int i = 0; i < sizeY2; i++)
+	{
+		patient[i].resize(269);
+	}
+
+	int sizeX1 = database[0].size();
+	int sizeX2 = patient[0].size();
+
+	if (sampleData.is_open() && patientData.is_open())
+	{
+		int j = 0, k = 0;
+		while (getline(sampleData, line1))
+		{
+			for (int i = 0; i < sizeX1; i++)
+			{
+				sampleData >> database[j][i];
+				//cout << database[j][i];
+			}
+			j++;
+		}
+
+		while (getline(patientData, line2))
+		{
+			for (int l = 0; l < sizeX2; l++)
+			{
+				patientData >> patient[k][l];
+				cout << patient[k][l] << " ";
+			}
+			k++;
+		}
+	}
+	*/
+	for (int i = 0; i < patient.size(); i++)
+	{
+		double swag = CalculateResult(database, patient[i], stringyCols, 1);
+		double swag2 = CalculateResult(database, patient[i], stringyCols, 2);
+		double swag3 = CalculateResult(database, patient[i], stringyCols, 3);
+		string swag3ToPrint;
+
+		if (swag3 < 0.5)
+		{
+			swag3ToPrint = "COMPLETE_REMISSION";
+		}
+		else if (swag3 >= 0.5)
+		{
+			swag3ToPrint = "RESISTANT";
+		}
+		else
+		{
+			swag3ToPrint = "You're wrong, haha!";
+		}
+
+		cout << patient[i][0] << ' ' << swag3ToPrint << ' ' << swag2 << ' ' << swag << endl;
+	}
+
+	return 0;
+}

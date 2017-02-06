@@ -1,0 +1,32 @@
+void main(){
+	string line;
+	fstream myFile;
+	myFile.open("DATABASE.txt");
+
+	vector<vector<string> > database;
+	database.resize(165);
+
+	int sizeX = database.size();
+
+	for (int i = 0; i < sizeX; i++)
+	{
+		database[i].resize(269);
+	}
+
+	int sizeY = database[0].size();
+
+	if (myFile.is_open())
+	{
+		int j = 0;
+		while (getline(myFile, line)){
+			for (int i = 0; i < sizeY; i++)
+			{
+				myFile >> database[j][i];
+				
+				cout << database[j][i] << " ";
+			}
+			cout << endl;
+			j++;
+		}
+	}
+}
